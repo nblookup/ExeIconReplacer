@@ -14,8 +14,8 @@
 #endif
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION     0, 1, 0, 0
-PRODUCTVERSION  0, 1, 0, 0
+FILEVERSION     0, 2, 0, 0
+PRODUCTVERSION  0, 2, 0, 0
 FILEOS          VOS_NT_WINDOWS32
 FILETYPE        VFT_APP
 {
@@ -27,10 +27,10 @@ FILETYPE        VFT_APP
 		{
 			VALUE "CompanyName", "片山博文MZ\0"
 			VALUE "FileDescription", "ExeIconReplacer\0"
-			VALUE "FileVersion", "0.1\0"
+			VALUE "FileVersion", "0.2\0"
 			VALUE "LegalCopyright", "Copyright (C) 2015 片山博文MZ. All Rights Reserved.\0"
 			VALUE "ProductName", "ExeIconReplacer\0"
-			VALUE "ProductVersion", "0.1\0"
+			VALUE "ProductVersion", "0.2\0"
 		}
 	}
 #endif	// NO_JAP_ALLOWED
@@ -41,14 +41,18 @@ FILETYPE        VFT_APP
 		{
 			VALUE "CompanyName", "Katayama Hirofumi MZ\0"
 			VALUE "FileDescription", "ExeIconReplacer\0"
-			VALUE "FileVersion", "0.1\0"
+			VALUE "FileVersion", "0.2\0"
 			VALUE "LegalCopyright", "Copyright (C) 2015 Katayama Hirofumi MZ. All Rights Reserved.\0"
 			VALUE "ProductName", "ExeIconReplacer\0"
-			VALUE "ProductVersion", "0.1\0"
+			VALUE "ProductVersion", "0.2\0"
 		}
 	}
 	BLOCK "VarFileInfo"
 	{
+#ifdef NO_JAP_ALLOWED
+		VALUE "Translation", 0x0409, 0x04E4
+#else
 		VALUE "Translation", 0x0411, 0x03A4
+#endif
 	}
 }
