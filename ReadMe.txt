@@ -3,7 +3,7 @@
 /////////////////////////////////////////////////////
 
 ExeIconReplacer replaces the icon of a Windows .exe file
-to another icon. Written in C++.
+with another icon. Written in C++.
 
 /////////////////////////////////////////////////////
 // Katayama Hirofumi MZ (katahiromz) [ARMYANT]
