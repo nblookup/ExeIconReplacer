@@ -1,0 +1,54 @@
+////////////////////////////////////////////////////////////////////////////
+// ExeIconReplacer.rc
+// Copyright (C) 2015 Katayama Hirofumi MZ.  All rights reserved.
+////////////////////////////////////////////////////////////////////////////
+// (Japanese, UTF-8)
+////////////////////////////////////////////////////////////////////////////
+
+#include <windows.h>
+#include <dlgs.h>
+
+#ifndef NO_JAP_ALLOWED
+// UTF-8
+#pragma code_page(65001)
+#endif
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     0, 1, 0, 0
+PRODUCTVERSION  0, 1, 0, 0
+FILEOS          VOS_NT_WINDOWS32
+FILETYPE        VFT_APP
+{
+#ifdef NO_JAP_ALLOWED
+	// Japanese
+	BLOCK "StringFileInfo"
+	{
+		BLOCK "041103A4"
+		{
+			VALUE "CompanyName", "片山博文MZ\0"
+			VALUE "FileDescription", "ExeIconReplacer\0"
+			VALUE "FileVersion", "0.1\0"
+			VALUE "LegalCopyright", "Copyright (C) 2015 片山博文MZ. All Rights Reserved.\0"
+			VALUE "ProductName", "ExeIconReplacer\0"
+			VALUE "ProductVersion", "0.1\0"
+		}
+	}
+#endif	// NO_JAP_ALLOWED
+	// English (U.S.)
+	BLOCK "StringFileInfo"
+	{
+		BLOCK "040904E4"
+		{
+			VALUE "CompanyName", "Katayama Hirofumi MZ\0"
+			VALUE "FileDescription", "ExeIconReplacer\0"
+			VALUE "FileVersion", "0.1\0"
+			VALUE "LegalCopyright", "Copyright (C) 2015 Katayama Hirofumi MZ. All Rights Reserved.\0"
+			VALUE "ProductName", "ExeIconReplacer\0"
+			VALUE "ProductVersion", "0.1\0"
+		}
+	}
+	BLOCK "VarFileInfo"
+	{
+		VALUE "Translation", 0x0411, 0x03A4
+	}
+}
