@@ -8,7 +8,7 @@
 ////////////////////////////////////////////////////////////////////////////
 // ExeIconReplacer
 
-bool ExeIconReplacer::Load(LPCTSTR pszFileName) {
+bool ExeIconReplacer::LoadIconFile(LPCTSTR pszFileName) {
     bool bOK = false;
 
     HANDLE hFile = ::CreateFile(pszFileName, GENERIC_READ,
@@ -19,97 +19,105 @@ bool ExeIconReplacer::Load(LPCTSTR pszFileName) {
     }
 
     DWORD dwRead;
-    if (::ReadFile(hFile, &_iconDir, sizeof(ICONDIR), &dwRead, NULL)) {
+    if (::ReadFile(hFile, &m_dir, sizeof(ICONDIR), &dwRead, NULL)) {
+        assert(IsIconDirOK());
         if (IsIconDirOK()) {
-            _iconEntry = new ICONDIRENTRY[_iconDir.idCount];
+            m_entry = new ICONDIRENTRY[m_dir.idCount];
             bOK = true;
-            for (int i = 0; i < _iconDir.idCount; i++) {
-                if (!::ReadFile(hFile, &_iconEntry[i],
-                                sizeof(ICONDIRENTRY), &dwRead, NULL)) {
+            for (int i = 0; i < m_dir.idCount; i++) {
+                if (!::ReadFile(hFile, &m_entry[i],
+                                sizeof(ICONDIRENTRY), &dwRead, NULL))
+                {
                     bOK = false;
+                    assert(0);
                     break;
                 }
             }
             if (bOK) {
-                _iconImage = new LPBYTE[_iconDir.idCount];
+                m_image = new LPBYTE[m_dir.idCount];
                 bOK = true;
-                for (int i = 0; i < _iconDir.idCount; i++) {
-                    ::SetFilePointer(hFile, _iconEntry[i].dwImageOffset,
+                for (int i = 0; i < m_dir.idCount; i++) {
+                    ::SetFilePointer(hFile, m_entry[i].dwImageOffset,
                                      NULL, FILE_BEGIN);
-                    _iconImage[i] = new BYTE[_iconEntry[i].dwBytesInRes];
-                    if (!::ReadFile(hFile, _iconImage[i],
-                                    _iconEntry[i].dwBytesInRes,
+                    m_image[i] = new BYTE[m_entry[i].dwBytesInRes];
+                    if (!::ReadFile(hFile, m_image[i],
+                                    m_entry[i].dwBytesInRes,
                                     &dwRead, NULL))
                     {
                         for (int j = i; j >= 0; --j) {
-                            delete[] _iconImage[i];
-                            _iconImage[i] = NULL;
+                            delete[] m_image[i];
+                            m_image[i] = NULL;
                         }
                         bOK = false;
+                        assert(0);
                         break;
                     }
                 }
                 if (!bOK) {
-                    delete[] _iconImage;
-                    _iconImage = NULL;
+                    delete[] m_image;
+                    m_image = NULL;
                 }
             }
             if (!bOK) {
-                delete _iconEntry;
-                _iconEntry = NULL;
+                delete m_entry;
+                m_entry = NULL;
             }
         }
+    } else {
+        assert(0);
     }
     ::CloseHandle(hFile);
     return bOK;
-} // ExeIconReplacer::Load
+} // ExeIconReplacer::LoadIconFile
 
 LPBYTE ExeIconReplacer::CreateIconGroupData(int nBaseID) {
-    delete _iconGroupData;
-
-    _iconGroupData = new BYTE[CountOfIconGroupData()];
-    memcpy(_iconGroupData, &_iconDir, sizeof(ICONDIR));
+    delete m_group;
+    m_group = new BYTE[SizeOfIconGroupData()];
+    CopyMemory(m_group, &m_dir, sizeof(ICONDIR));
 
     int offset = sizeof(ICONDIR);
     for (int i = 0; i < GetImageCount(); i++) {
-        BITMAPINFOHEADER bitmapheader;
-        CopyMemory(&bitmapheader, GetImageData(i),
+        BITMAPINFOHEADER    bmih;
+        CopyMemory(&bmih, GetImageData(i),
                    sizeof(BITMAPINFOHEADER));
 
         GRPICONDIRENTRY grpEntry;
-        grpEntry.bWidth        = _iconEntry[i].bWidth;
-        grpEntry.bHeight       = _iconEntry[i].bHeight;
-        grpEntry.bColorCount   = _iconEntry[i].bColorCount;
-        grpEntry.bReserved     = _iconEntry[i].bReserved;
-        grpEntry.wPlanes       = bitmapheader.biPlanes;
-        grpEntry.wBitCount     = bitmapheader.biBitCount;
-        grpEntry.dwBytesInRes  = _iconEntry[i].dwBytesInRes;
+        grpEntry.bWidth        = m_entry[i].bWidth;
+        grpEntry.bHeight       = m_entry[i].bHeight;
+        grpEntry.bColorCount   = m_entry[i].bColorCount;
+        grpEntry.bReserved     = m_entry[i].bReserved;
+        grpEntry.wPlanes       = bmih.biPlanes;
+        grpEntry.wBitCount     = bmih.biBitCount;
+        grpEntry.dwBytesInRes  = m_entry[i].dwBytesInRes;
         grpEntry.nID           = nBaseID + i;
 
-        CopyMemory(_iconGroupData + offset, &grpEntry,
+        CopyMemory(m_group + offset, &grpEntry,
                    sizeof(GRPICONDIRENTRY));
 
         offset += sizeof(GRPICONDIRENTRY);
     }
 
-    return _iconGroupData;
+    return m_group;
 } // ExeIconReplacer::CreateIconGroupData
 
 ////////////////////////////////////////////////////////////////////////////
 
 // function ReplaceIconOfExeFile
+#ifdef __cplusplus
+extern "C"
+#endif
 BOOL ReplaceIconOfExeFile(LPCTSTR pszExeFile, LPCTSTR pszIconFile,
      UINT nIconGroupID, UINT nIconBaseID)
 {
     ExeIconReplacer replacer;
-    if (replacer.Load(pszIconFile)) {
+    if (replacer.LoadIconFile(pszIconFile)) {
         HANDLE hUpdate = ::BeginUpdateResource(pszExeFile, FALSE);
         if (hUpdate) {
             // RT_GROUP_ICON
             BOOL bOK = ::UpdateResource(hUpdate, RT_GROUP_ICON,
                 MAKEINTRESOURCE(nIconGroupID), 0,
                 replacer.CreateIconGroupData(nIconBaseID),
-                replacer.CountOfIconGroupData()
+                replacer.SizeOfIconGroupData()
             );
 
             // RT_ICON
@@ -152,39 +160,42 @@ BOOL ReplaceIconOfExeFile(LPCTSTR pszExeFile, LPCTSTR pszIconFile,
 
 ////////////////////////////////////////////////////////////////////////////
 
+// NOTE: define NO_ICONREPLACER_PROGRAM if you want to use as a library.
+//#define NO_ICONREPLACER_PROGRAM
+
 #ifndef NO_ICONREPLACER_PROGRAM
-extern "C"
-int _tmain(int argc, _TCHAR **targv) {
-#if 0
-    // test only
-    if (ReplaceIconOfExeFile(TEXT("hello.exe"), TEXT("excel.ico"), 1, 1)) {
-        std::cout << "success" << std::endl;
-        return 0;
-    }
-    std::cout << "failure" << std::endl;
-    return 1;
-#endif
-
-    if (argc != 3) {
-        // show usage
-        tstring program = targv[0];
-        size_t i = program.find_last_of(TEXT("\\/"));
-        if (i != std::string::npos) {
-            program = program.substr(i + 1);
+    extern "C"
+    int _tmain(int argc, _TCHAR **targv) {
+    #if 0
+        // test only
+        if (ReplaceIconOfExeFile(TEXT("hello.exe"), TEXT("excel.ico"), 1, 1)) {
+            std::cout << "success" << std::endl;
+            return 0;
         }
-        tcout << TEXT("Usage: ") << program <<
-                 TEXT(" exefile.exe iconfile.ico") << std::endl;
-        return 0;
-    }
+        std::cout << "failure" << std::endl;
+        return 1;
+    #endif
 
-    // replace icon
-    if (ReplaceIconOfExeFile(targv[1], targv[2], 1, 1)) {
-        std::cout << "success" << std::endl;
-        return 0;
-    }
-    std::cout << "failure" << std::endl;
-    return 1;
-} // _tmain
+        if (argc != 3) {
+            // show usage
+            tstring progname = targv[0];
+            size_t i = progname.find_last_of(TEXT("\\/"));
+            if (i != std::string::npos) {
+                progname = progname.substr(i + 1);
+            }
+            tcout << TEXT("Usage: ") << progname <<
+                     TEXT(" exefile.exe iconfile.ico") << std::endl;
+            return 0;
+        }
+
+        // replace icon
+        if (ReplaceIconOfExeFile(targv[1], targv[2], 1, 1)) {
+            std::cout << "success" << std::endl;
+            return 0;
+        }
+        std::cout << "failure" << std::endl;
+        return 1;
+    } // _tmain
 #endif  // ndef NO_ICONREPLACER_PROGRAM
 
 ////////////////////////////////////////////////////////////////////////////

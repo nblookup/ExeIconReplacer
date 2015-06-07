@@ -16,10 +16,6 @@
     #include <assert.h>
 #endif
 
-// NOTE: define NO_ICONREPLACER_PROGRAM if you want to use as a library.
-#undef NO_ICONREPLACER_PROGRAM
-//#define NO_ICONREPLACER_PROGRAM
-
 ////////////////////////////////////////////////////////////////////////////
 
 typedef struct
@@ -58,8 +54,11 @@ typedef struct
 ////////////////////////////////////////////////////////////////////////////
 
 // function ReplaceIconOfExeFile
+#ifdef __cplusplus
+extern "C"
+#endif
 BOOL ReplaceIconOfExeFile(LPCTSTR pszExeFile, LPCTSTR pszIconFile,
-     UINT nIconGroupID, UINT nIconBaseID);
+                          UINT nIconGroupID, UINT nIconBaseID);
 
 ////////////////////////////////////////////////////////////////////////////
 
@@ -68,57 +67,58 @@ BOOL ReplaceIconOfExeFile(LPCTSTR pszExeFile, LPCTSTR pszIconFile,
     class ExeIconReplacer {
     public:
         ExeIconReplacer() {
-            memset(&_iconDir, 0, sizeof(_iconDir));
-            _iconEntry = NULL;
-            _iconImage = NULL;
-            _iconGroupData = NULL;
+            ZeroMemory(&m_dir, sizeof(m_dir));
+            m_entry = NULL;
+            m_image = NULL;
+            m_group = NULL;
         }
 
         ~ExeIconReplacer() {
-            if (_iconImage) {
-                for (int i = 0; i < _iconDir.idCount; i++) {
-                    delete _iconImage[i];
+            if (m_image) {
+                for (int i = 0; i < m_dir.idCount; i++) {
+                    delete m_image[i];
                 }
             }
-            delete _iconImage;
-            delete _iconEntry;
-            delete _iconGroupData;
+            delete m_image;
+            delete m_entry;
+            delete m_group;
         }
 
-        bool Load(LPCTSTR pszFileName);
+        bool LoadIconFile(LPCTSTR pszFileName);
+
         LPBYTE CreateIconGroupData(int nBaseID);
 
         int GetImageCount() const {
-            return _iconDir.idCount;
+            return m_dir.idCount;
         }
 
         LPBYTE GetImageData(int index) const {
             assert(0 <= index && index < GetImageCount());
-            assert(_iconImage);
-            return _iconImage[index];
+            assert(m_image);
+            return m_image[index];
         }
 
         DWORD GetImageSize(int index) const {
             assert(0 <= index && index < GetImageCount());
-            assert(_iconEntry);
-            return _iconEntry[index].dwBytesInRes;
+            assert(m_entry);
+            return m_entry[index].dwBytesInRes;
         }
 
         BOOL IsIconDirOK() const {
-            return _iconDir.idReserved == 0 &&
-                   _iconDir.idType == 1 && _iconDir.idCount > 0;
+            return m_dir.idReserved == 0 &&
+                   m_dir.idType == 1 && m_dir.idCount > 0;
         }
 
-        int CountOfIconGroupData() const {
+        int SizeOfIconGroupData() const {
             return sizeof(ICONDIR) +
                    sizeof(GRPICONDIRENTRY) * GetImageCount();
         }
 
     protected:
-        ICONDIR         _iconDir;
-        ICONDIRENTRY*   _iconEntry;
-        LPBYTE*         _iconImage;
-        LPBYTE          _iconGroupData;
+        ICONDIR         m_dir;
+        ICONDIRENTRY*   m_entry;
+        LPBYTE*         m_image;
+        LPBYTE          m_group;
     }; // class ExeIconReplacer
 #endif  // def __cplusplus
 
